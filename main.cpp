@@ -1,5 +1,8 @@
 #include<iostream>
 #include<fstream>
+#include<cstdlib>		// for random number
+#include<iomanip>
+#include<time.h>
 using namespace std;
 
 class CMPT135_String {
@@ -187,7 +190,7 @@ istream& operator >> (istream &in, CMPT135_String &s) {
 	if (ch != SPACE && ch != TAB && ch != EOL)
 		s += ch;
 		//Read characters into s until a TAB or EOL or EOF is reached
-		while (!in.eof()) {
+		while (!gin.eof()) {
 			in.get(ch);
 			if (ch == TAB || ch == EOL || in.eof())
 				break;
@@ -590,15 +593,26 @@ void Vertex::appendEdge(const int &desVertexIndex, const double &cost) {
 	//append a new element whose destination vertex index and cost are initialized with the
 	//argument values to E
 	int i=0;
+	bool flag = false;
 	for(;i<this->E.getSize();i++) {
-		if(E[i].desVertexIndex == desVertexIndex)
-			return;
+		if(E[i].desVertexIndex == desVertexIndex) {
+			flag == true;		// only update cost.
+			if(E[i].cost == cost)
+				return;		// don't do anything
+			break;
+		}
 	}
 
-	Edge temp;
-	temp.desVertexIndex = desVertexIndex;
-	temp.cost = cost;
-	E.append(temp);
+	if(flag == true) {
+		// update cost
+		E[i].cost = cost;
+	}
+	else {	// initialize new edge and append.
+		Edge temp;
+		temp.desVertexIndex = desVertexIndex;
+		temp.cost = cost;
+		E.append(temp);
+	}
 }
 
 
@@ -679,24 +693,24 @@ public:
 	read in part (d) above.
 	4. Close the input file stream object and you are done.
 	*/
-	SmarterArray<Vertex> getVertexSet() const; //Return V
-	int getVertexSetSize() const; //Return the number of elements of V
-	Vertex getVertex(const int &) const; //Assert the index argument and then return the element at index
-	int getVertexIndex(const CMPT135_String &) const; //Return the index of an element whose name matches
+	SmarterArray<Vertex> getVertexSet() const; //Return V done
+	int getVertexSetSize() const; //Return the number of elements of V done
+	Vertex getVertex(const int &) const; //Assert the index argument and then return the element at index done
+	int getVertexIndex(const CMPT135_String &) const; //Return the index of an element whose name matches done
 	//the argument. If no such element is found, return -1
-	//Assertion is not required
+	//Assertion is not required done
 	int getVertexIndex(const Vertex &) const; //Return the index of the element whose name matches the
 	//name of the vertex argument. If no such element is found,
-	//return -1. Assertion is not required
-	CMPT135_String getRandomVertexName() const; //Pick a vertex at random and return its name
+	//return -1. Assertion is not required done
+	CMPT135_String getRandomVertexName() const; //Pick a vertex at random and return its name done
 	void appendVertex(const Vertex &); //Append the argument only if no such vertex already exists
 	//If same name vertex already exists then do nothing (just return)
-	//Assertion is not required
-	void appendVertex(const CMPT135_String &); //Append a new vertex with the given name and empty E
-	void appendEdge(const CMPT135_String &dep, const CMPT135_String &des, const double &cost); //Assert
+	//Assertion is not required done
+	void appendVertex(const CMPT135_String &); //Append a new vertex with the given name and empty E done
+	void appendEdge(const CMPT135_String &dep, const CMPT135_String &des, const double &cost); //assert  
 	//two vertices whose names match the arguments exist. Then append an edge to the vertex whose name matches
 	//the dep argument. The destination vertex index of the edge must be set to the index of the vertex whose
-	//name matches des and its cost must be set to the cost argument
+	//name matches des and its cost must be set to the cost argument done
 	friend ostream& operator << (ostream &, const Graph &); //Implemented for you done
 };
 
@@ -744,7 +758,7 @@ Graph::Graph() {
 Graph::Graph(const char* f_name) {
 	//f_name is files name
 	ifstream fin; // for reading file
-	fin.open(&f_name);
+	fin.open(f_name);
 
 	if(fin.fail()) {
 		cerr<<"Cannot open file..."<<endl;
@@ -753,15 +767,47 @@ Graph::Graph(const char* f_name) {
 
 	char c;
 	CMPT135_String dep, des;
+	Vertex v;
 	double cost;
+	bool flag = false;		// to know when to insert
+	bool flag_read_dep = false;
+	bool flag_read_des = false;
 
 	while(!fin.eof()) {
 		fin>>c;
-		if(c != ' ')
+		if(c != ' ' ) 
+			dep = dep + c;
+		else 
+			flag_read_dep = true;
 
-		
+		if(dep.empty())
+			break;
+
+		if(flag_read_dep == true ) {
+			if(c != ' ') 
+				des = des + c;
+			else
+				flag_read_des = true;
+
+			if(des.empty())
+				break;
+		}
+
+		if(flag_read_des == true) {
+			fin>>cost;
+			flag = true;
+		}
+			
+		if(flag == true) {
+			this->appendVertex(dep);
+			this->appendVertex(des);
+			this->appendEdge(dep, des, cost);
+			this->appendEdge(des, dep, cost);
+			flag_read_des = flag_read_dep = flag = false;
+		}
 	}
 
+	fin.close();	// done
 }
 
 
@@ -769,15 +815,22 @@ SmarterArray<Vertex> Graph::getVertexSet() const {
 	return V;
 }
 
-int getVertexSetSize() const {
+int Graph::getVertexSetSize() const {
 //Return the number of elements of V
 	return V.getSize();
-}
-
-Vertex getVertex(const int &) const { 
+}	
+	
+Vertex Graph::getVertex(const int &index) const { 
 //Assert the index argument and then return the element at index
 
+	if(index < 0 || index > V.getSize() ) {
+		Vertex v;		//empty vertex
+		return v;
+	}
+
+	return V[index];	// and we are done
 }
+
 int Graph::getVertexIndex(const CMPT135_String & str) const {
 	//Return the index of an element whose name matches
 	//the argument. If no such element is found, return -1
@@ -788,8 +841,90 @@ int Graph::getVertexIndex(const CMPT135_String & str) const {
 	return -1;
 }
 
-int Graph::getVertexIndex(const Vertex &) const {
-	 //Return the index of the element whose name matches the
+int Graph::getVertexIndex(const Vertex & v) const {
+	//Return the index of the element whose name matches the
 	//name of the vertex argument. If no such element is found,
-	//return -1. Assertion is not required
+	//return -1
+
+	for(int i=0;i<V.getSize(); i++) 
+		if(V[i].getName() == v.getName()) 
+			return i;
+	
+	return -1;
+}
+
+
+CMPT135_String Graph::getRandomVertexName() const {
+	//Pick a vertex at random and return its name
+	int size = V.getSize();
+	int x = rand()%size; 	// x is our random number between 0 to size-1.
+
+	return V[x].getName();		// return name of the vertex at index 'x'
+}
+void Graph::appendVertex(const Vertex &v ) {
+	//Append the argument only if no such vertex already exists
+	//If same name vertex already exists then do nothing (just return)
+	for(int i=0;i<V.getSize();i++) {
+		if(v.getName() == V[i].getName())		// checks if the vertex already exists in the graph.
+			return;		// exits the function
+	}
+
+	V.append(v);		// and we are done.
+}
+
+
+void Graph::appendVertex(const CMPT135_String &name) {
+	//Append a new vertex with the given name and empty E
+	Vertex v(name);		// name is name and E will be emoty
+	V.append(v);		// appending new vertex to the graph
+
+}
+void Graph::appendEdge(const CMPT135_String &dep, const CMPT135_String &des, const double &cost) {
+	//Assert two vertices whose names match the arguments exist. Then append an edge to the vertex whose name matches
+	//the dep argument. The destination vertex index of the edge must be set to the index of the vertex whose
+	//name matches des and its cost must be set to the cost argument
+
+	if(dep == des)
+		return;			// if the departure and destinations are equal, then don't do anything.
+
+	bool flag1(0), flag2(0);
+	int pos1 , pos2, i(0);
+
+	while(flag1 == false || flag2 == false) {
+		if(dep == V[i].getName()) {
+			flag1 = true;
+			pos1 = i;
+		}
+		if(des == V[i].getName()) {
+			flag2 = true;
+			pos2 = i;
+		}
+	}
+
+	if(flag1 == false || flag2 == false)
+		return;					// any of the cities were not present in the map.
+
+	// now lets append the edge
+
+	/*
+	// don'r worry about this idea.
+	Edge AtoB, BtoA;		// edge A to B (dep to des)	and vice versa.
+
+	AtoB.desVertexIndex = pos2;	// edge from deparure city(pos1) to destination(pos2)
+
+	BtoA.desVertexIndex = pos2;	// edge from deparure city(pos[2) to destination(pos1)
+	
+	AtoB.cost = BtoA.cost = cost;		// both have same cost.
+	*/
+	
+	V[pos1].appendEdge(pos2, cost);		// it will call Vertex::appendEdge(destVertexIndex, cost) of vertex at pos1
+}
+
+int main() {
+	srand(time(0));
+	Graph g("Connectivity Map.txt");
+	cout << "Graph constructed successfully." << endl;
+	cout << g << endl;
+	system("Pause");
+	return 0;
 }
