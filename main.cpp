@@ -77,7 +77,7 @@ CMPT135_String::CMPT135_String(const char *c)
 
 CMPT135_String::~CMPT135_String()
 {
-// destructoir
+// destructor
 	if (buffer != nullptr) {
 		delete[] buffer;
 		buffer = nullptr;
@@ -156,11 +156,12 @@ bool CMPT135_String::operator != (const CMPT135_String &str) const {
 }
 
 CMPT135_String CMPT135_String::operator + (const char &s) const {
-	// adds	character s to the calling object
-	int len = this->length()+ 1;
-	CMPT135_String temp = new char[len+1];
-	int i;
-	for(i=0;i<this->length();i++) {
+	// adds	character s to the calling object and return a new string
+	CMPT135_String temp;
+	temp.buffer = new char[this->length() + 2];		// 1 space for s and another for null character.
+	int i=0;
+	for(;i<this->length();i++) {
+		cout<<this->buffer[i]<<endl;
 		temp.buffer[i] = this->buffer[i];
 	}
 	temp.buffer[i] = s;
@@ -190,7 +191,7 @@ istream& operator >> (istream &in, CMPT135_String &s) {
 	if (ch != SPACE && ch != TAB && ch != EOL)
 		s += ch;
 		//Read characters into s until a TAB or EOL or EOF is reached
-		while (!gin.eof()) {
+		while (!in.eof()) {
 			in.get(ch);
 			if (ch == TAB || ch == EOL || in.eof())
 				break;
@@ -260,11 +261,6 @@ ostream& operator << (ostream &out, const CMPT135_String &s) {
 
 
 
-
-
-
-#include<iostream>
-using namespace std;
 
 template <class T>
 class SmarterArray {
@@ -400,37 +396,33 @@ void SmarterArray<T>::append(const T& e) {
 }
 
 template<class T>
-void SmarterArray<T>::insert(const int &index, const T & element) {
+void SmarterArray<T>::insert(const int &index, const T &element) {
 	//Assert the integer argument index >= 0 && index <= size and then
 	//Insert the T type argument into the calling object at the index.
 	//If the integer argument is equal to size, then perform append
 
 	if(index < 0 || index > this->getSize() )
 		return;
-	else if(index == this->getSize() ) {
+
+	if(index == this->getSize() ) 
 		this->append(element);
-	}
-	else {
-		T *temp=new T [this->getSize()+1];
-		int i;
-		for( i=0;i<index;i++) 
-			temp[i]=this->A[i];
-		
-		temp[i]=element;
-		i++;
 
-		for(; i<this->getSize(); i++) 
-			temp[i] = this->A[i-1];
-
-		temp[i] = '\0';
+	T *temp=new T[this->getSize()+1];		// 1 for element and 1 for null character
+	int i = 0;
+	for(; i<index; i++) 
+		temp[i]=this->A[i];
 	
-		if(this->getSize()>0)
-			delete[] A;
-		
-		this->A=temp;
-		this->size+=1;
-	}
+	temp[i]=element;
+	i++;
 
+	for(; i<this->getSize(); i++)
+		temp[i] = this->A[i-1];
+
+	if(this->getSize()>0)
+		delete[] A;
+		
+	this->A=temp;
+	this->size+=1;
 }
 
 template<class T>
@@ -574,8 +566,8 @@ Edge Vertex::getEdge(const int &index) const {
 		if(index == E[i].desVertexIndex)
 			return E[i];
 
-	Edge temp;
-	return temp;
+	cerr<<"cannot find the requested edge in the Edge set."<<endl;
+	abort();
 }
 
 double Vertex::getEdgeCost(const int &desVertexIndex) const {
@@ -584,7 +576,9 @@ double Vertex::getEdgeCost(const int &desVertexIndex) const {
 			return E[i].cost;
 	}
 	// if not found.
-	return 0.0;
+	cerr<<"Cannot find the edge requested"<<endl;
+	cerr<<"Aborting the program"<<endl;
+	abort();
 }
 
 void Vertex::appendEdge(const int &desVertexIndex, const double &cost) {
@@ -758,15 +752,20 @@ Graph::Graph() {
 Graph::Graph(const char* f_name) {
 	//f_name is files name
 	ifstream fin; // for reading file
+	//cout<<f_name<<endl;
 	fin.open(f_name);
 
-	if(fin.fail()) {
+	if(fin.fail() == true) {
 		cerr<<"Cannot open file..."<<endl;
 		return;
 	}
+	//else
+	//	cout<<"\nWe reading..."<<endl;		
+
+	//cout<<"I am ok"<<endl;
 
 	char c;
-	CMPT135_String dep, des;
+	CMPT135_String dep, des, temp;
 	Vertex v;
 	double cost;
 	bool flag = false;		// to know when to insert
@@ -775,35 +774,44 @@ Graph::Graph(const char* f_name) {
 
 	while(!fin.eof()) {
 		fin>>c;
-		if(c != ' ' ) 
-			dep = dep + c;
-		else 
+		temp = temp + c;
+	//	cout<<"\ntemp: "<<temp<<"  c: "<<c<<endl;
+
+		if(c = ' ' && flag_read_dep == false) {
+			dep = temp;
 			flag_read_dep = true;
+			temp.~CMPT135_String();
+	//		cout<<"\ndep="<<dep<<endl;
+			continue;
+		}
 
-		if(dep.empty())
-			break;
-
-		if(flag_read_dep == true ) {
-			if(c != ' ') 
-				des = des + c;
-			else
-				flag_read_des = true;
-
-			if(des.empty())
-				break;
+		if(c = ' ' && flag_read_dep == true && flag_read_des == false) {
+	//		cout<<temp<<"..."<<endl;
+			des = temp;
+			flag_read_des = true;
+			temp.~CMPT135_String();
+	//		cout<<"\ndes="<<des<<endl;
+			//continue;
 		}
 
 		if(flag_read_des == true) {
 			fin>>cost;
 			flag = true;
+	//		cout<<"\ncost: "<<cost<<endl;
 		}
-			
+		//	cout<<dep<<endl;
+	//	cout<<"flag"<<flag<<endl;
 		if(flag == true) {
+		//	cout<<dep<<"	"<<des<<"	"<<cost<<endl;
+	//		cout<<"\nwe appending"<<endl;
 			this->appendVertex(dep);
 			this->appendVertex(des);
-			this->appendEdge(dep, des, cost);
 			this->appendEdge(des, dep, cost);
+			this->appendEdge(dep, des, cost);
+			dep.~CMPT135_String();
+			des.~CMPT135_String();
 			flag_read_des = flag_read_dep = flag = false;
+	//		cout<<"done"<<endl;
 		}
 	}
 
@@ -876,6 +884,12 @@ void Graph::appendVertex(const Vertex &v ) {
 void Graph::appendVertex(const CMPT135_String &name) {
 	//Append a new vertex with the given name and empty E
 	Vertex v(name);		// name is name and E will be emoty
+
+	for(int i=0;i<V.getSize();i++) {
+		if(v.getName() == V[i].getName())		// checks if the vertex already exists in the graph.
+			return;		// exits the function
+	}
+
 	V.append(v);		// appending new vertex to the graph
 
 }
@@ -895,15 +909,20 @@ void Graph::appendEdge(const CMPT135_String &dep, const CMPT135_String &des, con
 			flag1 = true;
 			pos1 = i;
 		}
+
 		if(des == V[i].getName()) {
 			flag2 = true;
 			pos2 = i;
 		}
+		i++;
 	}
 
-	if(flag1 == false || flag2 == false)
+	if((flag1&flag2) == true )
+		V[pos1].appendEdge(pos2, cost);		// it will call Vertex::appendEdge(destVertexIndex, cost) of vertex at pos1
+	else	
 		return;					// any of the cities were not present in the map.
-
+	
+		
 	// now lets append the edge
 
 	/*
@@ -917,14 +936,215 @@ void Graph::appendEdge(const CMPT135_String &dep, const CMPT135_String &des, con
 	AtoB.cost = BtoA.cost = cost;		// both have same cost.
 	*/
 	
-	V[pos1].appendEdge(pos2, cost);		// it will call Vertex::appendEdge(destVertexIndex, cost) of vertex at pos1
+
 }
 
-int main() {
+
+class Path {
+private:
+	SmarterArray<CMPT135_String> p; //The names of the vertices along the path
+public:
+	Path(); //Construct an empty path
+	int length() const; //Return the number of vertices in the path (the number of elements of p)
+	int find(const CMPT135_String &) const; //Return the index of element of p whose name matches the
+	//argument. If no element satisfies the condition, then return -1
+	double computePathCost(const Graph &) const; //Compute the sum of the costs of edges along this path
+	//given the underlying graph argument. Remember that the path object stores only city names. Thus
+	//you need the underlying graph argument to determine the vertices in the graph that belong to the
+	//cities. Then you will be able to find the edges that connect the vertices which will enable you to
+	//get the costs of the edges. The sume of the costs of these edges is returned from this function.
+	CMPT135_String& operator [] (const int &) const; //Assert index is valid and then return the
+	//element of p at the given index
+	void append(const CMPT135_String &); //Append the argument to the calling object
+	void insert(const int &index, const CMPT135_String &); //Assert the condition index >= 0 &&
+	//index <= the length and then insert the CMPT135_String argument
+	//at the specified index
+	void remove(const int &); //Assert the index argument and then remove the element at the specified index
+	friend ostream& operator << (ostream &, const Path &); //Implemented for you.
+};
+ostream& operator << (ostream &out, const Path &p) {
+	out << "[";
+	if (p.length() > 0) {
+		for (int i = 0; i < p.length()-1; i++)
+			out << p[i] << " -> ";
+		out << p[p.length()-1];
+	}
+	out << "]";
+	return out;
+}
+
+Path::Path() {
+	// p smarterarray is already empty
+	// no need to do anything
+
+}
+
+int Path::length() const {
+	//Return the number of vertices in the path (the number of elements of p)
+	return p.getSize();
+}
+
+int Path::find(const CMPT135_String &name) const {
+	//Return the index of element of p whose name matches the	
+	//argument. If no element satisfies the condition, then return -1
+	for(int i=0;i<p.getSize();i++) {
+		if(name == p[i])
+			return i;
+	}
+	return -1;
+}
+
+	
+double Path::computePathCost(const Graph & googol) const {
+	//Compute the sum of the costs of edges along this path
+	//given the underlying graph argument. Remember that the path object stores only city names. Thus
+	//you need the underlying graph argument to determine the vertices in the graph that belong to the
+	//cities. Then you will be able to find the edges that connect the vertices which will enable you to
+	//get the costs of the edges. The sume of the costs of these edges is returned from this function.
+
+	double tot_cost = 0.0;
+	int start = 0;
+	int finish = 0;
+
+	for(int i=0;i<p.getSize()-1;i++) {
+		start = googol.getVertexIndex(p[i]);		//p[i] is the departure city and p[i+1] is the destination city
+		Vertex a = googol.getVertex(start);			// which is again departure city's vertex
+		finish = googol.getVertexIndex(p[i+1]);
+
+		SmarterArray<Edge> E1 = a.getEdgeSet();
+		for(int x=0; x<a.getEdgeSetSize();x++) {
+			if(E1[x].desVertexIndex == finish)
+				tot_cost += a.getEdgeCost(E1[x].desVertexIndex);
+		}
+	}
+	return tot_cost;
+}
+
+
+CMPT135_String& Path::operator [] (const int &index) const {
+	//Assert index is valid and then return the
+	//element of p at the given index
+
+	if(index < 0 || index>p.getSize()) { 
+		cerr<<"Invalid index \n not found\n aborting the program."<<endl;
+		abort();
+	}
+
+	return p[index];
+}
+
+
+void Path::append(const CMPT135_String &add_me) {
+	//Append the argument to the calling object
+	for(int i=0;i<p.getSize();i++) {
+		if(p[i] == add_me )
+			return;			// already exists
+	}
+
+	p.append(add_me);
+}
+
+void Path::insert(const int &index, const CMPT135_String &insert_me) {
+	//Assert the condition index >= 0 &&
+	//index <= the length and then insert the CMPT135_String argument
+	//at the specified index
+	if(index < 0 || index>p.getSize()) {
+		return;
+	}
+
+	p.insert(index, insert_me);			// done
+}
+
+void Path::remove(const int &three_thousand) {
+	//Assert the index argument and then remove the element at the specified index
+	if(three_thousand < 0 || three_thousand>p.getSize()) 
+		return;
+
+	if(p.remove(three_thousand) == false) {
+		cerr<<"cannot find the element for removing"<<endl;
+		cerr<<"Aborting program"<<endl;
+		abort();
+	}
+}
+
+
+
+
+Path computeMinCostPath(const Graph &g, const CMPT135_String &departure, const CMPT135_String &destination, Path currentPath = Path() ) {
+	if(g.getVertexSetSize() < 1) {
+		cerr<<"Cannot find a path in the graph because of insufficient number of cities."<<endl;
+		cerr<<"Aborting the program"<<endl;
+		abort();
+	}
+
+	int depVertexIndex, desVertexIndex;
+
+	depVertexIndex = g.getVertexIndex(departure);		// departure city vertex
+	desVertexIndex = g.getVertexIndex(destination);	// destination city index
+
+	if(departure == destination) {
+		Path minCostPath = currentPath;
+		minCostPath.append(destination);
+		cout<<minCostPath<<endl;
+		return minCostPath;
+	}
+	else if(currentPath.find(departure) != -1) {
+		Path minCostPath = currentPath;
+		return minCostPath;
+	}
+
+	int depVertex = g.getVertexIndex(departure);
+	Vertex v = g.getVertex(depVertex);			// which is again departure city's vertex
+
+	SmarterArray<Edge> E;
+
+	E = g.getVertexSet()[depVertex].getEdgeSet();		// might not compile
+
+	Path minCostPath;
+
+	currentPath.append(v.getName());		// appending name of depVertex to the path.
+
+	for(int i=0;i<E.getSize();i++) {
+		CMPT135_String nextVertexName = g.getVertex(E[i].desVertexIndex).getName();  
+
+		if(currentPath.find(nextVertexName) != -1) {
+			Path candidatePath = computeMinCostPath(g, nextVertexName, destination, currentPath);
+
+			if(candidatePath.length() != 0) {
+				if((candidatePath[candidatePath.length() - 1] == destination)) {
+					if(minCostPath.length() == 0)
+						minCostPath = candidatePath;
+					else if(minCostPath.computePathCost(g) > candidatePath.computePathCost(g)) 
+						minCostPath = candidatePath;
+				}
+			}
+		}
+	}
+
+	// remove the last element of the currentPath.
+	currentPath.remove(currentPath.length() - 1);
+
+	// i am done
+	return minCostPath;
+}
+
+int main()  {
 	srand(time(0));
 	Graph g("Connectivity Map.txt");
 	cout << "Graph constructed successfully." << endl;
 	cout << g << endl;
-	system("Pause");
+	CMPT135_String departure = g.getRandomVertexName();
+	CMPT135_String destination = g.getRandomVertexName();
+	cout << "Computing shortest path from " << departure << " to " << destination << endl;
+	Path minCostPath = computeMinCostPath(g, departure, destination);
+	cout << endl;
+	cout << "Departure: " << departure << endl;
+	cout << "Destination: " << destination << endl;
+	if (minCostPath.length() == 0)
+		cout << "No path found." << endl;
+	else
+		cout << "The minimum cost path is: " << minCostPath << " with cost = " <<
+	minCostPath.computePathCost(g) << endl;
+	//system("Pause");
 	return 0;
 }
