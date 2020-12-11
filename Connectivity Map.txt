@@ -1,5 +1,5 @@
-A B 1.5
-A C 2.9
-B C 3.6
-B D 4.7
-C D 5.8
+Aa Bb 1.5
+Aa Cc 2.9
+Bb Cc 3.6
+Bb Dd 4.7
+Cc Dd 5.8

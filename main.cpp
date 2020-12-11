@@ -70,7 +70,6 @@ CMPT135_String::CMPT135_String(const char *c)
 		buffer = new char[len+1];
 		for (int i = 0; i < len; i++)
 			buffer[i] = c[i];
-
 		buffer[len] = '\0';
 	}
 }
@@ -766,44 +765,46 @@ Graph::Graph(const char* f_name) {
 
 	char c;
 	CMPT135_String dep, des, temp;
-	Vertex v;
 	double cost;
 	bool flag = false;		// to know when to insert
 	bool flag_read_dep = false;
 	bool flag_read_des = false;
 
+	fin>>noskipws;		// this way it won't skip white space
+
 	while(!fin.eof()) {
 		fin>>c;
 		temp = temp + c;
-	//	cout<<"\ntemp: "<<temp<<"  c: "<<c<<endl;
+		//cout<<"\ntemp: "<<temp<<"  c: "<<c<<endl;
 
-		if(c = ' ' && flag_read_dep == false) {
+		if(c == ' '  && flag_read_dep == false) {
 			dep = temp;
 			flag_read_dep = true;
 			temp.~CMPT135_String();
-	//		cout<<"\ndep="<<dep<<endl;
+			//cout<<"\ndep="<<dep<<endl;
 			continue;
 		}
 
-		if(c = ' ' && flag_read_dep == true && flag_read_des == false) {
-	//		cout<<temp<<"..."<<endl;
+		if( c == ' ' && flag_read_dep == true && flag_read_des == false) {
+		//	cout<<temp<<"..."<<endl;
 			des = temp;
 			flag_read_des = true;
 			temp.~CMPT135_String();
-	//		cout<<"\ndes="<<des<<endl;
+		//	cout<<"\ndes="<<des<<endl;
+			//fin>>c;		//reading one more space before the cost.
 			//continue;
 		}
 
 		if(flag_read_des == true) {
 			fin>>cost;
 			flag = true;
-	//		cout<<"\ncost: "<<cost<<endl;
+			//cout<<"\ncost: "<<cost<<endl;
 		}
 		//	cout<<dep<<endl;
-	//	cout<<"flag"<<flag<<endl;
+		//cout<<"flag"<<flag<<endl;
 		if(flag == true) {
-		//	cout<<dep<<"	"<<des<<"	"<<cost<<endl;
-	//		cout<<"\nwe appending"<<endl;
+		//cout<<dep<<"	"<<des<<"	"<<cost<<endl;
+		//	cout<<"\nwe appending"<<endl;
 			this->appendVertex(dep);
 			this->appendVertex(des);
 			this->appendEdge(des, dep, cost);
@@ -811,7 +812,8 @@ Graph::Graph(const char* f_name) {
 			dep.~CMPT135_String();
 			des.~CMPT135_String();
 			flag_read_des = flag_read_dep = flag = false;
-	//		cout<<"done"<<endl;
+			fin>>c;		// for taking pointer to next fucking level.
+		//	cout<<"done"<<endl;
 		}
 	}
 
@@ -868,6 +870,7 @@ CMPT135_String Graph::getRandomVertexName() const {
 	int x = rand()%size; 	// x is our random number between 0 to size-1.
 
 	return V[x].getName();		// return name of the vertex at index 'x'
+	//return CMPT135_String("UBC");
 }
 void Graph::appendVertex(const Vertex &v ) {
 	//Append the argument only if no such vertex already exists
@@ -1077,9 +1080,8 @@ Path computeMinCostPath(const Graph &g, const CMPT135_String &departure, const C
 		abort();
 	}
 
-	int depVertexIndex, desVertexIndex;
+	int desVertexIndex;
 
-	depVertexIndex = g.getVertexIndex(departure);		// departure city vertex
 	desVertexIndex = g.getVertexIndex(destination);	// destination city index
 
 	if(departure == destination) {
@@ -1093,23 +1095,20 @@ Path computeMinCostPath(const Graph &g, const CMPT135_String &departure, const C
 		return minCostPath;
 	}
 
-	int depVertex = g.getVertexIndex(departure);
-	Vertex v = g.getVertex(depVertex);			// which is again departure city's vertex
+	Vertex depVertex = g.getVertex(g.getVertexIndex(departure) );
 
-	SmarterArray<Edge> E;
+	SmarterArray<Edge> E = depVertex.getEdgeSet();		// Edge set of depVertex.
 
-	E = g.getVertexSet()[depVertex].getEdgeSet();		// might not compile
+	Path minCostPath;		// default empty path.
 
-	Path minCostPath;
-
-	currentPath.append(v.getName());		// appending name of depVertex to the path.
+	currentPath.append(depVertex.getName());		// appending name of depVertex to the path.
 
 	for(int i=0;i<E.getSize();i++) {
 		CMPT135_String nextVertexName = g.getVertex(E[i].desVertexIndex).getName();  
+		cout<<"Next vertex name: "<<nextVertexName<<endl;
 
-		if(currentPath.find(nextVertexName) != -1) {
+		if(currentPath.find(nextVertexName) == -1) {		// current path does not contain nextVertex name, i.e safe to proceed
 			Path candidatePath = computeMinCostPath(g, nextVertexName, destination, currentPath);
-
 			if(candidatePath.length() != 0) {
 				if((candidatePath[candidatePath.length() - 1] == destination)) {
 					if(minCostPath.length() == 0)
@@ -1128,13 +1127,16 @@ Path computeMinCostPath(const Graph &g, const CMPT135_String &departure, const C
 	return minCostPath;
 }
 
+
 int main()  {
 	srand(time(0));
-	Graph g("Connectivity Map.txt");
+	Graph g("Connectivity Map Large.txt");
 	cout << "Graph constructed successfully." << endl;
 	cout << g << endl;
 	CMPT135_String departure = g.getRandomVertexName();
 	CMPT135_String destination = g.getRandomVertexName();
+	//CMPT135_String departure("UBC");
+	//CMPT135_String destination("Richmond");
 	cout << "Computing shortest path from " << departure << " to " << destination << endl;
 	Path minCostPath = computeMinCostPath(g, departure, destination);
 	cout << endl;
